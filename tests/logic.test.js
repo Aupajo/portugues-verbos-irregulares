@@ -7,6 +7,7 @@ function assert(condition, message) {
 
 const PERSONS = ["eu", "tu", "ele / ela / você", "nós", "vós", "eles / elas / vocês"];
 
+// ── BEGIN: copy of VERBS from index.html (keep in sync) ──
 const VERBS = {
   SER: {
     Indicativo: {
@@ -264,6 +265,7 @@ const VERBS = {
     },
   },
 };
+// ── END: copy of VERBS from index.html ──
 
 const VERB_NAMES = ["SER","IR","ESTAR","TER","FAZER","SABER","QUERER","DAR"];
 const INDICATIVO_TENSES = [
@@ -290,13 +292,19 @@ VERB_NAMES.forEach(v => {
     const forms = VERBS[v].Subjuntivo[t];
     assert(Array.isArray(forms) && forms.length === 6,
       `${v} Subjuntivo "${t}" has 6 forms`);
+    forms.forEach((f, i) => assert(typeof f === 'string' && f.length > 0,
+      `${v} Subjuntivo "${t}" [${i}] is non-empty string`));
   });
-  assert(Array.isArray(VERBS[v].Imperativo["Afirmativo"]) && VERBS[v].Imperativo["Afirmativo"].length === 6,
-    `${v} Imperativo Afirmativo has 6 forms`);
-  assert(Array.isArray(VERBS[v].Imperativo["Negativo"]) && VERBS[v].Imperativo["Negativo"].length === 6,
-    `${v} Imperativo Negativo has 6 forms`);
-  assert(Array.isArray(VERBS[v].FormasNominais["Infinito pessoal"]) && VERBS[v].FormasNominais["Infinito pessoal"].length === 6,
-    `${v} FormasNominais "Infinito pessoal" has 6 forms`);
+  ["Afirmativo","Negativo"].forEach(k => {
+    const forms = VERBS[v].Imperativo[k];
+    assert(Array.isArray(forms) && forms.length === 6, `${v} Imperativo ${k} has 6 forms`);
+    forms.forEach((f, i) => assert(typeof f === 'string' && f.length > 0,
+      `${v} Imperativo ${k} [${i}] is non-empty string`));
+  });
+  const ip = VERBS[v].FormasNominais["Infinito pessoal"];
+  assert(Array.isArray(ip) && ip.length === 6, `${v} FormasNominais "Infinito pessoal" has 6 forms`);
+  ip.forEach((f, i) => assert(typeof f === 'string' && f.length > 0,
+    `${v} FormasNominais "Infinito pessoal" [${i}] is non-empty string`));
   assert(typeof VERBS[v].FormasNominais["Gerúndio"] === 'string',
     `${v} FormasNominais Gerúndio is string`);
   assert(typeof VERBS[v].FormasNominais["Particípio"] === 'string',
