@@ -276,6 +276,42 @@ const VERBS = {
   },
 };
 
+// Progress: track correct/incorrect per (verb|mood|tense) key
+const Progress = (() => {
+  const STORAGE_KEY = 'verbos-progress';
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch { return {}; }
+  }
+
+  function save(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function record(key, correct) {
+    const data = load();
+    if (!data[key]) data[key] = { correct: 0, incorrect: 0 };
+    if (correct) data[key].correct++; else data[key].incorrect++;
+    save(data);
+  }
+
+  function getWeight(key) {
+    const data = load();
+    const p = data[key];
+    if (!p) return 1;
+    const total = p.correct + p.incorrect;
+    if (total === 0) return 1;
+    return 1 + (p.incorrect / total) * 2; // range: 1.0 – 3.0
+  }
+
+  function getAll() {
+    return load();
+  }
+
+  return { record, getWeight, getAll };
+})();
+
 // App placeholder — screens added in later tasks
 document.getElementById('app').textContent = 'Loading…';
 

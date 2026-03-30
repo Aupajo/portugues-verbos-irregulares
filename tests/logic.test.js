@@ -311,4 +311,74 @@ VERB_NAMES.forEach(v => {
     `${v} FormasNominais Particípio is string`);
 });
 
+// ── Progress module tests ──
+// Stub localStorage for Node.js
+const _store = {};
+const localStorage = {
+  getItem: k => _store[k] ?? null,
+  setItem: (k, v) => { _store[k] = v; },
+};
+
+// ── BEGIN: copy of Progress from index.html (keep in sync) ──
+const Progress = (() => {
+  const STORAGE_KEY = 'verbos-progress';
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch { return {}; }
+  }
+
+  function save(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function record(key, correct) {
+    const data = load();
+    if (!data[key]) data[key] = { correct: 0, incorrect: 0 };
+    if (correct) data[key].correct++; else data[key].incorrect++;
+    save(data);
+  }
+
+  function getWeight(key) {
+    const data = load();
+    const p = data[key];
+    if (!p) return 1;
+    const total = p.correct + p.incorrect;
+    if (total === 0) return 1;
+    return 1 + (p.incorrect / total) * 2;
+  }
+
+  function getAll() {
+    return load();
+  }
+
+  return { record, getWeight, getAll };
+})();
+// ── END: copy of Progress from index.html ──
+
+assert(typeof Progress !== 'undefined', 'Progress module exists');
+assert(typeof Progress.record === 'function', 'Progress.record is function');
+assert(typeof Progress.getWeight === 'function', 'Progress.getWeight is function');
+assert(typeof Progress.getAll === 'function', 'Progress.getAll is function');
+
+Progress.record('SER|Indicativo|Presente', true);
+Progress.record('SER|Indicativo|Presente', true);
+Progress.record('SER|Indicativo|Presente', false);
+const w1 = Progress.getWeight('SER|Indicativo|Presente');
+assert(w1 > 1, 'Weight increases after incorrect answers');
+assert(w1 < 2, 'Weight stays below 2 after 1 of 3 wrong');
+
+Progress.record('IR|Indicativo|Presente', true);
+Progress.record('IR|Indicativo|Presente', true);
+const w2 = Progress.getWeight('IR|Indicativo|Presente');
+assert(w2 < w1, 'All-correct item has lower weight than mixed item');
+
+const unseen = Progress.getWeight('DAR|Subjuntivo|Presente');
+assert(unseen === 1, 'Unseen item has weight 1');
+
+const all = Progress.getAll();
+assert(typeof all === 'object', 'getAll returns object');
+assert(all['SER|Indicativo|Presente'].correct === 2, 'getAll tracks correct count');
+assert(all['SER|Indicativo|Presente'].incorrect === 1, 'getAll tracks incorrect count');
+
 console.log('\nDone.');
