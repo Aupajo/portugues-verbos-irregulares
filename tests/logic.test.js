@@ -1,0 +1,306 @@
+// tests/logic.test.js — run with: node tests/logic.test.js
+
+function assert(condition, message) {
+  if (!condition) { console.error(`FAIL: ${message}`); process.exitCode = 1; }
+  else { console.log(`PASS: ${message}`); }
+}
+
+const PERSONS = ["eu", "tu", "ele / ela / você", "nós", "vós", "eles / elas / vocês"];
+
+const VERBS = {
+  SER: {
+    Indicativo: {
+      "Presente":                         ["sou","és","é","somos","sois","são"],
+      "Pretérito Imperfeito":             ["era","eras","era","éramos","éreis","eram"],
+      "Pretérito Perfeito simples":       ["fui","foste","foi","fomos","fostes","foram"],
+      "Pretérito Perfeito composto":      ["tenho sido","tens sido","tem sido","temos sido","tendes sido","têm sido"],
+      "Pretérito mais-que-perfeito simples":  ["fora","foras","fora","fôramos","fôreis","foram"],
+      "Pretérito mais-que-perfeito composto": ["tinha sido","tinhas sido","tinha sido","tínhamos sido","tínheis sido","tinham sido"],
+      "Futuro do Presente simples":       ["serei","serás","será","seremos","sereis","serão"],
+      "Futuro do Presente composto":      ["terei sido","terás sido","terá sido","teremos sido","tereis sido","terão sido"],
+      "Futuro do Pretérito simples":      ["seria","serias","seria","seríamos","seríeis","seriam"],
+      "Futuro do Pretérito composto":     ["teria sido","terias sido","teria sido","teríamos sido","teríeis sido","teriam sido"],
+    },
+    Subjuntivo: {
+      "Presente":                         ["seja","sejas","seja","sejamos","sejais","sejam"],
+      "Pretérito Perfeito":               ["tenha sido","tenhas sido","tenha sido","tenhamos sido","tenhais sido","tenham sido"],
+      "Pretérito Imperfeito":             ["fosse","fosses","fosse","fôssemos","fôsseis","fossem"],
+      "Pretérito mais-que-perfeito":      ["tivesse sido","tivesses sido","tivesse sido","tivéssemos sido","tivésseis sido","tivessem sido"],
+      "Futuro simples":                   ["for","fores","for","formos","fordes","forem"],
+      "Futuro composto":                  ["tiver sido","tiveres sido","tiver sido","tivermos sido","tiverdes sido","tiverem sido"],
+    },
+    Imperativo: {
+      "Afirmativo": ["—","sê (tu)","seja (você)","sejamos (nós)","sede (vós)","sejam (vocês)"],
+      "Negativo":   ["—","não sejas (tu)","não seja (você)","não sejamos (nós)","não sejais (vós)","não sejam (vocês)"],
+    },
+    FormasNominais: {
+      "Infinito pessoal": ["ser","seres","ser","sermos","serdes","serem"],
+      "Gerúndio":  "sendo",
+      "Particípio": "sido",
+    },
+  },
+
+  IR: {
+    Indicativo: {
+      "Presente":                         ["vou","vais","vai","vamos","ides","vão"],
+      "Pretérito Imperfeito":             ["ia","ias","ia","íamos","íeis","iam"],
+      "Pretérito Perfeito simples":       ["fui","foste","foi","fomos","fostes","foram"],
+      "Pretérito Perfeito composto":      ["tenho ido","tens ido","tem ido","temos ido","tendes ido","têm ido"],
+      "Pretérito mais-que-perfeito simples":  ["fora","foras","fora","fôramos","fôreis","foram"],
+      "Pretérito mais-que-perfeito composto": ["tinha ido","tinhas ido","tinha ido","tínhamos ido","tínheis ido","tinham ido"],
+      "Futuro do Presente simples":       ["irei","irás","irá","iremos","ireis","irão"],
+      "Futuro do Presente composto":      ["terei ido","terás ido","terá ido","teremos ido","tereis ido","terão ido"],
+      "Futuro do Pretérito simples":      ["iria","irias","iria","iríamos","iríeis","iriam"],
+      "Futuro do Pretérito composto":     ["teria ido","terias ido","teria ido","teríamos ido","teríeis ido","teriam ido"],
+    },
+    Subjuntivo: {
+      "Presente":                         ["vá","vás","vá","vamos","vades","vão"],
+      "Pretérito Perfeito":               ["tenha ido","tenhas ido","tenha ido","tenhamos ido","tenhais ido","tenham ido"],
+      "Pretérito Imperfeito":             ["fosse","fosses","fosse","fôssemos","fôsseis","fossem"],
+      "Pretérito mais-que-perfeito":      ["tivesse ido","tivesses ido","tivesse ido","tivéssemos ido","tivésseis ido","tivessem ido"],
+      "Futuro simples":                   ["for","fores","for","formos","fordes","forem"],
+      "Futuro composto":                  ["tiver ido","tiveres ido","tiver ido","tivermos ido","tiverdes ido","tiverem ido"],
+    },
+    Imperativo: {
+      "Afirmativo": ["—","vai (tu)","vá (você)","vamos (nós)","ide (vós)","vão (vocês)"],
+      "Negativo":   ["—","não vás (tu)","não vá (você)","não vamos (nós)","não vades (vós)","não vão (vocês)"],
+    },
+    FormasNominais: {
+      "Infinito pessoal": ["ir","ires","ir","irmos","irdes","irem"],
+      "Gerúndio":  "indo",
+      "Particípio": "ido",
+    },
+  },
+
+  ESTAR: {
+    Indicativo: {
+      "Presente":                         ["estou","estás","está","estamos","estais","estão"],
+      "Pretérito Imperfeito":             ["estava","estavas","estava","estávamos","estáveis","estavam"],
+      "Pretérito Perfeito simples":       ["estive","estiveste","esteve","estivemos","estivestes","estiveram"],
+      "Pretérito Perfeito composto":      ["tenho estado","tens estado","tem estado","temos estado","tendes estado","têm estado"],
+      "Pretérito mais-que-perfeito simples":  ["estivera","estiveras","estivera","estivéramos","estivéreis","estiveram"],
+      "Pretérito mais-que-perfeito composto": ["tinha estado","tinhas estado","tinha estado","tínhamos estado","tínheis estado","tinham estado"],
+      "Futuro do Presente simples":       ["estarei","estarás","estará","estaremos","estareis","estarão"],
+      "Futuro do Presente composto":      ["terei estado","terás estado","terá estado","teremos estado","tereis estado","terão estado"],
+      "Futuro do Pretérito simples":      ["estaria","estarias","estaria","estaríamos","estaríeis","estariam"],
+      "Futuro do Pretérito composto":     ["teria estado","terias estado","teria estado","teríamos estado","teríeis estado","teriam estado"],
+    },
+    Subjuntivo: {
+      "Presente":                         ["esteja","estejas","esteja","estejamos","estejais","estejam"],
+      "Pretérito Perfeito":               ["tenha estado","tenhas estado","tenha estado","tenhamos estado","tenhais estado","tenham estado"],
+      "Pretérito Imperfeito":             ["estivesse","estivesses","estivesse","estivéssemos","estivésseis","estivessem"],
+      "Pretérito mais-que-perfeito":      ["tivesse estado","tivesses estado","tivesse estado","tivéssemos estado","tivésseis estado","tivessem estado"],
+      "Futuro simples":                   ["estiver","estiveres","estiver","estivermos","estiverdes","estiverem"],
+      "Futuro composto":                  ["tiver estado","tiveres estado","tiver estado","tivermos estado","tiverdes estado","tiverem estado"],
+    },
+    Imperativo: {
+      "Afirmativo": ["—","está (tu)","esteja (você)","estejamos (nós)","estai (vós)","estejam (vocês)"],
+      "Negativo":   ["—","não estejas (tu)","não esteja (você)","não estejamos (nós)","não estejais (vós)","não estejam (vocês)"],
+    },
+    FormasNominais: {
+      "Infinito pessoal": ["estar","estares","estar","estarmos","estardes","estarem"],
+      "Gerúndio":  "estando",
+      "Particípio": "estado",
+    },
+  },
+
+  TER: {
+    Indicativo: {
+      "Presente":                         ["tenho","tens","tem","temos","tendes","têm"],
+      "Pretérito Imperfeito":             ["tinha","tinhas","tinha","tínhamos","tínheis","tinham"],
+      "Pretérito Perfeito simples":       ["tive","tiveste","teve","tivemos","tivestes","tiveram"],
+      "Pretérito Perfeito composto":      ["tenho tido","tens tido","tem tido","temos tido","tendes tido","têm tido"],
+      "Pretérito mais-que-perfeito simples":  ["tivera","tiveras","tivera","tivéramos","tivéreis","tiveram"],
+      "Pretérito mais-que-perfeito composto": ["tinha tido","tinhas tido","tinha tido","tínhamos tido","tínheis tido","tinham tido"],
+      "Futuro do Presente simples":       ["terei","terás","terá","teremos","tereis","terão"],
+      "Futuro do Presente composto":      ["terei tido","terás tido","terá tido","teremos tido","tereis tido","terão tido"],
+      "Futuro do Pretérito simples":      ["teria","terias","teria","teríamos","teríeis","teriam"],
+      "Futuro do Pretérito composto":     ["teria tido","terias tido","teria tido","teríamos tido","teríeis tido","teriam tido"],
+    },
+    Subjuntivo: {
+      "Presente":                         ["tenha","tenhas","tenha","tenhamos","tenhais","tenham"],
+      "Pretérito Perfeito":               ["tenha tido","tenhas tido","tenha tido","tenhamos tido","tenhais tido","tenham tido"],
+      "Pretérito Imperfeito":             ["tivesse","tivesses","tivesse","tivéssemos","tivésseis","tivessem"],
+      "Pretérito mais-que-perfeito":      ["tivesse tido","tivesses tido","tivesse tido","tivéssemos tido","tivésseis tido","tivessem tido"],
+      "Futuro simples":                   ["tiver","tiveres","tiver","tivermos","tiverdes","tiverem"],
+      "Futuro composto":                  ["tiver tido","tiveres tido","tiver tido","tivermos tido","tiverdes tido","tiverem tido"],
+    },
+    Imperativo: {
+      "Afirmativo": ["—","tem (tu)","tenha (você)","tenhamos (nós)","tende (vós)","tenham (vocês)"],
+      "Negativo":   ["—","não tenhas (tu)","não tenha (você)","não tenhamos (nós)","não tenhais (vós)","não tenham (vocês)"],
+    },
+    FormasNominais: {
+      "Infinito pessoal": ["ter","teres","ter","termos","terdes","terem"],
+      "Gerúndio":  "tendo",
+      "Particípio": "tido",
+    },
+  },
+
+  FAZER: {
+    Indicativo: {
+      "Presente":                         ["faço","fazes","faz","fazemos","fazeis","fazem"],
+      "Pretérito Imperfeito":             ["fazia","fazias","fazia","fazíamos","fazíeis","faziam"],
+      "Pretérito Perfeito simples":       ["fiz","fizeste","fez","fizemos","fizestes","fizeram"],
+      "Pretérito Perfeito composto":      ["tenho feito","tens feito","tem feito","temos feito","tendes feito","têm feito"],
+      "Pretérito mais-que-perfeito simples":  ["fizera","fizeras","fizera","fizéramos","fizéreis","fizeram"],
+      "Pretérito mais-que-perfeito composto": ["tinha feito","tinhas feito","tinha feito","tínhamos feito","tínheis feito","tinham feito"],
+      "Futuro do Presente simples":       ["farei","farás","fará","faremos","fareis","farão"],
+      "Futuro do Presente composto":      ["terei feito","terás feito","terá feito","teremos feito","tereis feito","terão feito"],
+      "Futuro do Pretérito simples":      ["faria","farias","faria","faríamos","faríeis","fariam"],
+      "Futuro do Pretérito composto":     ["teria feito","terias feito","teria feito","teríamos feito","teríeis feito","teriam feito"],
+    },
+    Subjuntivo: {
+      "Presente":                         ["faça","faças","faça","façamos","façais","façam"],
+      "Pretérito Perfeito":               ["tenha feito","tenhas feito","tenha feito","tenhamos feito","tenhais feito","tenham feito"],
+      "Pretérito Imperfeito":             ["fizesse","fizesses","fizesse","fizéssemos","fizésseis","fizessem"],
+      "Pretérito mais-que-perfeito":      ["tivesse feito","tivesses feito","tivesse feito","tivéssemos feito","tivésseis feito","tivessem feito"],
+      "Futuro simples":                   ["fizer","fizeres","fizer","fizermos","fizerdes","fizerem"],
+      "Futuro composto":                  ["tiver feito","tiveres feito","tiver feito","tivermos feito","tiverdes feito","tiverem feito"],
+    },
+    Imperativo: {
+      "Afirmativo": ["—","faz / faze (tu)","faça (você)","façamos (nós)","fazei (vós)","façam (vocês)"],
+      "Negativo":   ["—","não faças (tu)","não faça (você)","não façamos (nós)","não façais (vós)","não façam (vocês)"],
+    },
+    FormasNominais: {
+      "Infinito pessoal": ["fazer","fazeres","fazer","fazermos","fazerdes","fazerem"],
+      "Gerúndio":  "fazendo",
+      "Particípio": "feito",
+    },
+  },
+
+  SABER: {
+    Indicativo: {
+      "Presente":                         ["sei","sabes","sabe","sabemos","sabeis","sabem"],
+      "Pretérito Imperfeito":             ["sabia","sabias","sabia","sabíamos","sabíeis","sabiam"],
+      "Pretérito Perfeito simples":       ["soube","soubeste","soube","soubemos","soubestes","souberam"],
+      "Pretérito Perfeito composto":      ["tenho sabido","tens sabido","tem sabido","temos sabido","tendes sabido","têm sabido"],
+      "Pretérito mais-que-perfeito simples":  ["soubera","souberas","soubera","soubéramos","soubéreis","souberam"],
+      "Pretérito mais-que-perfeito composto": ["tinha sabido","tinhas sabido","tinha sabido","tínhamos sabido","tínheis sabido","tinham sabido"],
+      "Futuro do Presente simples":       ["saberei","saberás","saberá","saberemos","sabereis","saberão"],
+      "Futuro do Presente composto":      ["terei sabido","terás sabido","terá sabido","teremos sabido","tereis sabido","terão sabido"],
+      "Futuro do Pretérito simples":      ["saberia","saberias","saberia","saberíamos","saberíeis","saberiam"],
+      "Futuro do Pretérito composto":     ["teria sabido","terias sabido","teria sabido","teríamos sabido","teríeis sabido","teriam sabido"],
+    },
+    Subjuntivo: {
+      "Presente":                         ["saiba","saibas","saiba","saibamos","saibais","saibam"],
+      "Pretérito Perfeito":               ["tenha sabido","tenhas sabido","tenha sabido","tenhamos sabido","tenhais sabido","tenham sabido"],
+      "Pretérito Imperfeito":             ["soubesse","soubesses","soubesse","soubéssemos","soubésseis","soubessem"],
+      "Pretérito mais-que-perfeito":      ["tivesse sabido","tivesses sabido","tivesse sabido","tivéssemos sabido","tivésseis sabido","tivessem sabido"],
+      "Futuro simples":                   ["souber","souberes","souber","soubermos","souberdes","souberem"],
+      "Futuro composto":                  ["tiver sabido","tiveres sabido","tiver sabido","tivermos sabido","tiverdes sabido","tiverem sabido"],
+    },
+    Imperativo: {
+      "Afirmativo": ["—","sabe (tu)","saiba (você)","saibamos (nós)","sabei (vós)","saibam (vocês)"],
+      "Negativo":   ["—","não saibas (tu)","não saiba (você)","não saibamos (nós)","não saibais (vós)","não saibam (vocês)"],
+    },
+    FormasNominais: {
+      "Infinito pessoal": ["saber","saberes","saber","sabermos","saberdes","saberem"],
+      "Gerúndio":  "sabendo",
+      "Particípio": "sabido",
+    },
+  },
+
+  QUERER: {
+    Indicativo: {
+      "Presente":                         ["quero","queres","quer","queremos","quereis","querem"],
+      "Pretérito Imperfeito":             ["queria","querias","queria","queríamos","queríeis","queriam"],
+      "Pretérito Perfeito simples":       ["quis","quiseste","quis","quisemos","quisestes","quiseram"],
+      "Pretérito Perfeito composto":      ["tenho querido","tens querido","tem querido","temos querido","tendes querido","têm querido"],
+      "Pretérito mais-que-perfeito simples":  ["quisera","quiseras","quisera","quiséramos","quiséreis","quiseram"],
+      "Pretérito mais-que-perfeito composto": ["tinha querido","tinhas querido","tinha querido","tínhamos querido","tínheis querido","tinham querido"],
+      "Futuro do Presente simples":       ["quererei","quererás","quererá","quereremos","querereis","quererão"],
+      "Futuro do Presente composto":      ["terei querido","terás querido","terá querido","teremos querido","tereis querido","terão querido"],
+      "Futuro do Pretérito simples":      ["quereria","quererias","quereria","quereríamos","quereríeis","quereriam"],
+      "Futuro do Pretérito composto":     ["teria querido","terias querido","teria querido","teríamos querido","teríeis querido","teriam querido"],
+    },
+    Subjuntivo: {
+      "Presente":                         ["queira","queiras","queira","queiramos","queirais","queiram"],
+      "Pretérito Perfeito":               ["tenha querido","tenhas querido","tenha querido","tenhamos querido","tenhais querido","tenham querido"],
+      "Pretérito Imperfeito":             ["quisesse","quisesses","quisesse","quiséssemos","quisésseis","quisessem"],
+      "Pretérito mais-que-perfeito":      ["tivesse querido","tivesses querido","tivesse querido","tivéssemos querido","tivésseis querido","tivessem querido"],
+      "Futuro simples":                   ["quiser","quiseres","quiser","quisermos","quiserdes","quiserem"],
+      "Futuro composto":                  ["tiver querido","tiveres querido","tiver querido","tivermos querido","tiverdes querido","tiverem querido"],
+    },
+    Imperativo: {
+      "Afirmativo": ["—","quer / quere (tu)","queira (você)","queiramos (nós)","querei (vós)","queiram (vocês)"],
+      "Negativo":   ["—","não queiras (tu)","não queira (você)","não queiramos (nós)","não queirais (vós)","não queiram (vocês)"],
+    },
+    FormasNominais: {
+      "Infinito pessoal": ["querer","quereres","querer","querermos","quererdes","quererem"],
+      "Gerúndio":  "querendo",
+      "Particípio": "querido",
+    },
+  },
+
+  DAR: {
+    Indicativo: {
+      "Presente":                         ["dou","dás","dá","damos","dais","dão"],
+      "Pretérito Imperfeito":             ["dava","davas","dava","dávamos","dáveis","davam"],
+      "Pretérito Perfeito simples":       ["dei","deste","deu","demos","destes","deram"],
+      "Pretérito Perfeito composto":      ["tenho dado","tens dado","tem dado","temos dado","tendes dado","têm dado"],
+      "Pretérito mais-que-perfeito simples":  ["dera","deras","dera","déramos","déreis","deram"],
+      "Pretérito mais-que-perfeito composto": ["tinha dado","tinhas dado","tinha dado","tínhamos dado","tínheis dado","tinham dado"],
+      "Futuro do Presente simples":       ["darei","darás","dará","daremos","dareis","darão"],
+      "Futuro do Presente composto":      ["terei dado","terás dado","terá dado","teremos dado","tereis dado","terão dado"],
+      "Futuro do Pretérito simples":      ["daria","darias","daria","daríamos","daríeis","dariam"],
+      "Futuro do Pretérito composto":     ["teria dado","terias dado","teria dado","teríamos dado","teríeis dado","teriam dado"],
+    },
+    Subjuntivo: {
+      "Presente":                         ["dê","dês","dê","demos","deis","deem"],
+      "Pretérito Perfeito":               ["tenha dado","tenhas dado","tenha dado","tenhamos dado","tenhais dado","tenham dado"],
+      "Pretérito Imperfeito":             ["desse","desses","desse","déssemos","désseis","dessem"],
+      "Pretérito mais-que-perfeito":      ["tivesse dado","tivesses dado","tivesse dado","tivéssemos dado","tivésseis dado","tivessem dado"],
+      "Futuro simples":                   ["der","deres","der","dermos","derdes","derem"],
+      "Futuro composto":                  ["tiver dado","tiveres dado","tiver dado","tivermos dado","tiverdes dado","tiverem dado"],
+    },
+    Imperativo: {
+      "Afirmativo": ["—","dá (tu)","dê (você)","demos (nós)","dai (vós)","deem (vocês)"],
+      "Negativo":   ["—","não dês (tu)","não dê (você)","não demos (nós)","não deis (vós)","não deem (vocês)"],
+    },
+    FormasNominais: {
+      "Infinito pessoal": ["dar","dares","dar","darmos","dardes","darem"],
+      "Gerúndio":  "dando",
+      "Particípio": "dado",
+    },
+  },
+};
+
+const VERB_NAMES = ["SER","IR","ESTAR","TER","FAZER","SABER","QUERER","DAR"];
+const INDICATIVO_TENSES = [
+  "Presente","Pretérito Imperfeito","Pretérito Perfeito simples",
+  "Pretérito Perfeito composto","Pretérito mais-que-perfeito simples",
+  "Pretérito mais-que-perfeito composto","Futuro do Presente simples",
+  "Futuro do Presente composto","Futuro do Pretérito simples","Futuro do Pretérito composto",
+];
+const SUBJUNTIVO_TENSES = [
+  "Presente","Pretérito Perfeito","Pretérito Imperfeito",
+  "Pretérito mais-que-perfeito","Futuro simples","Futuro composto",
+];
+
+VERB_NAMES.forEach(v => {
+  assert(VERBS[v] !== undefined, `${v} exists`);
+  INDICATIVO_TENSES.forEach(t => {
+    const forms = VERBS[v].Indicativo[t];
+    assert(Array.isArray(forms) && forms.length === 6,
+      `${v} Indicativo "${t}" has 6 forms`);
+    forms.forEach((f, i) => assert(typeof f === 'string' && f.length > 0,
+      `${v} Indicativo "${t}" [${i}] is non-empty string`));
+  });
+  SUBJUNTIVO_TENSES.forEach(t => {
+    const forms = VERBS[v].Subjuntivo[t];
+    assert(Array.isArray(forms) && forms.length === 6,
+      `${v} Subjuntivo "${t}" has 6 forms`);
+  });
+  assert(Array.isArray(VERBS[v].Imperativo["Afirmativo"]) && VERBS[v].Imperativo["Afirmativo"].length === 6,
+    `${v} Imperativo Afirmativo has 6 forms`);
+  assert(Array.isArray(VERBS[v].Imperativo["Negativo"]) && VERBS[v].Imperativo["Negativo"].length === 6,
+    `${v} Imperativo Negativo has 6 forms`);
+  assert(Array.isArray(VERBS[v].FormasNominais["Infinito pessoal"]) && VERBS[v].FormasNominais["Infinito pessoal"].length === 6,
+    `${v} FormasNominais "Infinito pessoal" has 6 forms`);
+  assert(typeof VERBS[v].FormasNominais["Gerúndio"] === 'string',
+    `${v} FormasNominais Gerúndio is string`);
+  assert(typeof VERBS[v].FormasNominais["Particípio"] === 'string',
+    `${v} FormasNominais Particípio is string`);
+});
+
+console.log('\nDone.');
