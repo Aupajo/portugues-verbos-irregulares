@@ -4,7 +4,138 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verbos Irregulares</title>
-  <style>/* CSS added in Task 4 */</style>
+  <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f9fafb;
+    color: #111827;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+
+  #app {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+  h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 16px; }
+  h3 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+
+  .subtitle { color: #6b7280; font-size: 0.875rem; margin-bottom: 20px; }
+
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  /* Verb / tense checkboxes */
+  .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .chip {
+    display: flex; align-items: center; gap: 6px;
+    background: #f3f4f6; border: 1px solid #d1d5db;
+    border-radius: 20px; padding: 4px 12px;
+    cursor: pointer; font-size: 0.875rem; user-select: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .chip.selected { background: #ede9fe; border-color: #7c3aed; color: #5b21b6; font-weight: 600; }
+  .chip input { display: none; }
+
+  .tense-group { margin-bottom: 14px; }
+  .tense-group-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #9ca3af; margin-bottom: 6px; }
+
+  /* Number input */
+  .count-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .count-row label { font-size: 0.875rem; color: #374151; }
+  .count-row input[type=number] {
+    width: 70px; padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px;
+    font-size: 1rem; text-align: center;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 10px 20px; border-radius: 8px; font-size: 0.95rem; font-weight: 600;
+    cursor: pointer; border: none; transition: opacity 0.15s;
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: #7c3aed; color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #6d28d9; }
+  .btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+  .btn-secondary:hover { background: #e5e7eb; }
+  .btn-full { width: 100%; }
+
+  /* Progress bar */
+  .progress-bar-wrap { background: #e5e7eb; border-radius: 99px; height: 6px; margin-bottom: 24px; }
+  .progress-bar-fill { background: #7c3aed; border-radius: 99px; height: 6px; transition: width 0.3s; }
+
+  /* Question card */
+  .question-label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #7c3aed; margin-bottom: 6px; }
+  .question-prompt { font-size: 1.35rem; font-weight: 700; margin-bottom: 20px; }
+
+  /* Text input for mode A */
+  .answer-input {
+    width: 100%; padding: 12px 16px; font-size: 1.1rem;
+    border: 2px solid #d1d5db; border-radius: 8px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .answer-input:focus { border-color: #7c3aed; }
+  .answer-input.correct { border-color: #16a34a; background: #f0fdf4; }
+  .answer-input.wrong   { border-color: #dc2626; background: #fef2f2; }
+  .answer-input.accent  { border-color: #d97706; background: #fffbeb; }
+
+  /* Feedback row */
+  .feedback { font-size: 0.9rem; margin-top: 10px; min-height: 20px; }
+  .feedback.correct { color: #16a34a; }
+  .feedback.wrong   { color: #dc2626; }
+  .feedback.accent  { color: #d97706; }
+
+  /* Mode B choices */
+  .choices { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .choice-btn {
+    text-align: left; padding: 12px 16px; border-radius: 8px;
+    border: 2px solid #e5e7eb; background: #fff; cursor: pointer;
+    font-size: 0.9rem; transition: border-color 0.15s, background 0.15s;
+  }
+  .choice-btn:hover:not(:disabled) { border-color: #7c3aed; background: #ede9fe; }
+  .choice-btn.selected { border-color: #7c3aed; background: #ede9fe; }
+  .choice-btn.correct-reveal { border-color: #16a34a; background: #f0fdf4; }
+  .choice-btn.wrong-reveal   { border-color: #dc2626; background: #fef2f2; }
+
+  /* Mode C table */
+  .fill-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  .fill-table td { padding: 4px 6px; }
+  .fill-table .person-cell { width: 120px; font-size: 0.875rem; color: #6b7280; }
+  .fill-table input {
+    width: 100%; padding: 7px 10px; border: 1.5px solid #d1d5db; border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .fill-table input.correct { border-color: #16a34a; background: #f0fdf4; }
+  .fill-table input.wrong   { border-color: #dc2626; background: #fef2f2; }
+  .fill-table input.accent  { border-color: #d97706; background: #fffbeb; }
+
+  /* Results */
+  .score-big { font-size: 3rem; font-weight: 800; color: #7c3aed; text-align: center; }
+  .score-pct { text-align: center; color: #6b7280; margin-bottom: 24px; }
+  .weak-list { list-style: none; }
+  .weak-list li {
+    padding: 8px 12px; background: #fef2f2; border-radius: 6px;
+    font-size: 0.875rem; color: #991b1b; margin-bottom: 6px;
+  }
+  .action-row { display: flex; gap: 12px; margin-top: 20px; }
+  .action-row .btn { flex: 1; }
+
+  /* Vós toggle */
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-size: 0.875rem; }
+  .toggle-row input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; }
+</style>
 </head>
 <body>
   <div id="app"></div>
