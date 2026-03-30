@@ -312,6 +312,96 @@ const Progress = (() => {
   return { record, getWeight, getAll };
 })();
 
+function normalize(s) { return s.trim().toLowerCase(); }
+
+function stripDiacritics(s) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+// Returns 'correct' | 'accent-only' | 'wrong'
+function checkAnswer(input, expected) {
+  if (normalize(input) === normalize(expected)) return 'correct';
+  if (stripDiacritics(input) === stripDiacritics(expected)) return 'accent-only';
+  return 'wrong';
+}
+
+// Returns array of question objects, length = count
+// selectedVerbs: array of verb name strings e.g. ['SER', 'IR']
+// selectedTenses: { Indicativo: [...], Subjuntivo: [...], Imperativo: [...], FormasNominais: [...] }
+// excludeVos: if true, skip person index 4 (vós) for mode A questions
+function buildQueue(selectedVerbs, selectedTenses, count, excludeVos) {
+  // Build pool of (verb, mood, tense) combos
+  const pool = [];
+  selectedVerbs.forEach(verb => {
+    ['Indicativo','Subjuntivo','Imperativo','FormasNominais'].forEach(mood => {
+      const tenses = selectedTenses[mood] || [];
+      tenses.forEach(tense => {
+        const forms = mood === 'FormasNominais'
+          ? VERBS[verb].FormasNominais[tense]
+          : VERBS[verb][mood][tense];
+        if (!forms) return;
+        const key = `${verb}|${mood}|${tense}`;
+        pool.push({ verb, mood, tense, forms, weight: Progress.getWeight(key) });
+      });
+    });
+  });
+
+  if (pool.length === 0) return [];
+
+  // Weighted random selection (with replacement)
+  const totalWeight = pool.reduce((s, p) => s + p.weight, 0);
+  const questions = [];
+
+  // Need at least 4 pool items for mode B distractors
+  const canUseB = pool.length >= 4;
+
+  for (let i = 0; i < count; i++) {
+    // Pick item by weight
+    let r = Math.random() * totalWeight;
+    let item = pool[pool.length - 1];
+    for (const p of pool) { r -= p.weight; if (r <= 0) { item = p; break; } }
+
+    const { verb, mood, tense, forms } = item;
+    const isSingleForm = typeof forms === 'string';
+
+    // Assign mode
+    let mode;
+    if (isSingleForm) {
+      mode = 'A';
+    } else {
+      const roll = Math.random();
+      if (canUseB && roll < 0.33) mode = 'B';
+      else if (roll < 0.66) mode = 'C';
+      else mode = 'A';
+    }
+
+    // For mode A: pick a random person slot
+    let personIndex = null;
+    if (mode === 'A' && !isSingleForm) {
+      const slots = [0,1,2,3,4,5].filter(i => !(excludeVos && i === 4) && forms[i] !== '—');
+      personIndex = slots[Math.floor(Math.random() * slots.length)];
+    }
+
+    // For mode B: build 4 choices (correct tense + 3 distractors from other tenses)
+    let choices = null;
+    if (mode === 'B') {
+      const distractors = pool
+        .filter(p => !(p.verb === verb && p.mood === mood && p.tense === tense) && typeof p.forms !== 'string')
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3)
+        .map(p => ({ verb: p.verb, mood: p.mood, tense: p.tense }));
+      choices = [
+        { verb, mood, tense, correct: true },
+        ...distractors.map(d => ({ ...d, correct: false })),
+      ].sort(() => Math.random() - 0.5);
+    }
+
+    questions.push({ verb, mood, tense, forms, mode, personIndex, choices });
+  }
+
+  return questions;
+}
+
 // App placeholder — screens added in later tasks
 document.getElementById('app').textContent = 'Loading…';
 

@@ -381,4 +381,132 @@ assert(typeof all === 'object', 'getAll returns object');
 assert(all['SER|Indicativo|Presente'].correct === 2, 'getAll tracks correct count');
 assert(all['SER|Indicativo|Presente'].incorrect === 1, 'getAll tracks incorrect count');
 
+// ── Question generator + answer checker tests ──
+
+// ── BEGIN: copy of normalize, stripDiacritics, checkAnswer, buildQueue from index.html ──
+function normalize(s) { return s.trim().toLowerCase(); }
+
+function stripDiacritics(s) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function checkAnswer(input, expected) {
+  if (normalize(input) === normalize(expected)) return 'correct';
+  if (stripDiacritics(input) === stripDiacritics(expected)) return 'accent-only';
+  return 'wrong';
+}
+
+function buildQueue(selectedVerbs, selectedTenses, count, excludeVos) {
+  const pool = [];
+  selectedVerbs.forEach(verb => {
+    ['Indicativo','Subjuntivo','Imperativo','FormasNominais'].forEach(mood => {
+      const tenses = selectedTenses[mood] || [];
+      tenses.forEach(tense => {
+        const forms = mood === 'FormasNominais'
+          ? VERBS[verb].FormasNominais[tense]
+          : VERBS[verb][mood][tense];
+        if (!forms) return;
+        const key = `${verb}|${mood}|${tense}`;
+        pool.push({ verb, mood, tense, forms, weight: Progress.getWeight(key) });
+      });
+    });
+  });
+
+  if (pool.length === 0) return [];
+
+  const totalWeight = pool.reduce((s, p) => s + p.weight, 0);
+  const questions = [];
+  const canUseB = pool.length >= 4;
+
+  for (let i = 0; i < count; i++) {
+    let r = Math.random() * totalWeight;
+    let item = pool[pool.length - 1];
+    for (const p of pool) { r -= p.weight; if (r <= 0) { item = p; break; } }
+
+    const { verb, mood, tense, forms } = item;
+    const isSingleForm = typeof forms === 'string';
+
+    let mode;
+    if (isSingleForm) {
+      mode = 'A';
+    } else {
+      const roll = Math.random();
+      if (canUseB && roll < 0.33) mode = 'B';
+      else if (roll < 0.66) mode = 'C';
+      else mode = 'A';
+    }
+
+    let personIndex = null;
+    if (mode === 'A' && !isSingleForm) {
+      const slots = [0,1,2,3,4,5].filter(i => !(excludeVos && i === 4) && forms[i] !== '—');
+      personIndex = slots[Math.floor(Math.random() * slots.length)];
+    }
+
+    let choices = null;
+    if (mode === 'B') {
+      const distractors = pool
+        .filter(p => !(p.verb === verb && p.mood === mood && p.tense === tense) && typeof p.forms !== 'string')
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3)
+        .map(p => ({ verb: p.verb, mood: p.mood, tense: p.tense }));
+      choices = [
+        { verb, mood, tense, correct: true },
+        ...distractors.map(d => ({ ...d, correct: false })),
+      ].sort(() => Math.random() - 0.5);
+    }
+
+    questions.push({ verb, mood, tense, forms, mode, personIndex, choices });
+  }
+
+  return questions;
+}
+// ── END: copy of normalize, stripDiacritics, checkAnswer, buildQueue from index.html ──
+
+// checkAnswer tests
+assert(typeof checkAnswer === 'function', 'checkAnswer exists');
+assert(checkAnswer('sou', 'sou') === 'correct', 'exact match is correct');
+assert(checkAnswer('  sou  ', 'sou') === 'correct', 'whitespace trimmed');
+assert(checkAnswer('SOu', 'sou') === 'correct', 'case insensitive');
+assert(checkAnswer('sao', 'são') === 'accent-only', 'missing accent flagged as accent-only');
+assert(checkAnswer('ser', 'sou') === 'wrong', 'wrong answer is wrong');
+assert(checkAnswer('eram', 'éramos') === 'wrong', 'partial match is wrong');
+
+// buildQueue tests
+assert(typeof buildQueue === 'function', 'buildQueue exists');
+
+const selectedVerbs = ['SER', 'IR'];
+const selectedTenses = {
+  Indicativo: ['Presente', 'Pretérito Perfeito simples'],
+  Subjuntivo: ['Presente'],
+  Imperativo: [],
+  FormasNominais: [],
+};
+const queue = buildQueue(selectedVerbs, selectedTenses, 10, false);
+assert(Array.isArray(queue), 'buildQueue returns array');
+assert(queue.length === 10, 'queue has requested count');
+queue.forEach((q, i) => {
+  assert(['A','B','C'].includes(q.mode), `q[${i}] has valid mode (${q.mode})`);
+  assert(selectedVerbs.includes(q.verb), `q[${i}] verb is in selection`);
+  assert(typeof q.mood === 'string', `q[${i}] has mood`);
+  assert(typeof q.tense === 'string', `q[${i}] has tense`);
+  assert(q.forms !== undefined, `q[${i}] has forms`);
+  if (q.mode === 'B') {
+    assert(Array.isArray(q.choices) && q.choices.length > 0, `q[${i}] mode B has choices`);
+    assert(q.choices.some(c => c.correct), `q[${i}] mode B has one correct choice`);
+  }
+  if (q.mode === 'A' && Array.isArray(q.forms)) {
+    assert(q.personIndex !== null, `q[${i}] mode A array-form has personIndex`);
+  }
+});
+
+// Empty selection returns empty queue
+const emptyQueue = buildQueue([], {}, 10, false);
+assert(emptyQueue.length === 0, 'empty selection returns empty queue');
+
+// excludeVos: no vós (index 4) in mode A person slots
+const queueNoVos = buildQueue(['SER'], { Indicativo: ['Presente'], Subjuntivo: [], Imperativo: [], FormasNominais: [] }, 50, true);
+queueNoVos.filter(q => q.mode === 'A' && Array.isArray(q.forms)).forEach((q, i) => {
+  assert(q.personIndex !== 4, `no vós in excludeVos queue item ${i}`);
+});
+
 console.log('\nDone.');
