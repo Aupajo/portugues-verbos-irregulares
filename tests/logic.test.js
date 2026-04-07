@@ -396,7 +396,7 @@ function checkAnswer(input, expected) {
   return 'wrong';
 }
 
-function buildQueue(selectedVerbs, selectedTenses, count, excludeVos) {
+function buildQueue(selectedVerbs, selectedTenses, count, selectedPersons) {
   const pool = [];
   selectedVerbs.forEach(verb => {
     ['Indicativo','Subjuntivo','Imperativo','FormasNominais'].forEach(mood => {
@@ -416,7 +416,8 @@ function buildQueue(selectedVerbs, selectedTenses, count, excludeVos) {
 
   const totalWeight = pool.reduce((s, p) => s + p.weight, 0);
   const questions = [];
-  const canUseB = pool.length >= 4;
+  const uniqueTenses = new Set(pool.filter(p => typeof p.forms !== 'string').map(p => `${p.mood}|${p.tense}`));
+  const canUseB = uniqueTenses.size >= 4;
 
   for (let i = 0; i < count; i++) {
     let r = Math.random() * totalWeight;
@@ -438,7 +439,7 @@ function buildQueue(selectedVerbs, selectedTenses, count, excludeVos) {
 
     let personIndex = null;
     if (mode === 'A' && !isSingleForm) {
-      const slots = [0,1,2,3,4,5].filter(i => !(excludeVos && i === 4) && forms[i] !== '—');
+      const slots = [0,1,2,3,4,5].filter(i => selectedPersons.has(i) && forms[i] !== '—');
       personIndex = slots[Math.floor(Math.random() * slots.length)];
     }
 
@@ -481,7 +482,7 @@ const selectedTenses = {
   Imperativo: [],
   FormasNominais: [],
 };
-const queue = buildQueue(selectedVerbs, selectedTenses, 10, false);
+const queue = buildQueue(selectedVerbs, selectedTenses, 10, new Set([0,1,2,3,4,5]));
 assert(Array.isArray(queue), 'buildQueue returns array');
 assert(queue.length === 10, 'queue has requested count');
 queue.forEach((q, i) => {
@@ -500,13 +501,13 @@ queue.forEach((q, i) => {
 });
 
 // Empty selection returns empty queue
-const emptyQueue = buildQueue([], {}, 10, false);
+const emptyQueue = buildQueue([], {}, 10, new Set([0,1,2,3,4,5]));
 assert(emptyQueue.length === 0, 'empty selection returns empty queue');
 
-// excludeVos: no vós (index 4) in mode A person slots
-const queueNoVos = buildQueue(['SER'], { Indicativo: ['Presente'], Subjuntivo: [], Imperativo: [], FormasNominais: [] }, 50, true);
+// Person selection: no vós (index 4) when excluded from selectedPersons
+const queueNoVos = buildQueue(['SER'], { Indicativo: ['Presente'], Subjuntivo: [], Imperativo: [], FormasNominais: [] }, 50, new Set([0,1,2,3,5]));
 queueNoVos.filter(q => q.mode === 'A' && Array.isArray(q.forms)).forEach((q, i) => {
-  assert(q.personIndex !== 4, `no vós in excludeVos queue item ${i}`);
+  assert(q.personIndex !== 4, `no vós in selectedPersons queue item ${i}`);
 });
 
 console.log('\nDone.');

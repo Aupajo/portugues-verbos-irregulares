@@ -143,6 +143,7 @@
 (function () {
 
 const PERSONS = ["eu", "tu", "ele / ela / você", "nós", "vós", "eles / elas / vocês"];
+const PERSON_SHORT = ["eu", "tu", "ela", "nós", "vós", "eles"];
 
 // Each verb: { Indicativo, Subjuntivo, Imperativo, FormasNominais }
 // Arrays of 6 strings: [eu, tu, ele/ela/você, nós, vós, eles/elas/vocês]
@@ -459,8 +460,8 @@ function checkAnswer(input, expected) {
 // Returns array of question objects, length = count
 // selectedVerbs: array of verb name strings e.g. ['SER', 'IR']
 // selectedTenses: { Indicativo: [...], Subjuntivo: [...], Imperativo: [...], FormasNominais: [...] }
-// excludeVos: if true, skip person index 4 (vós) for mode A questions
-function buildQueue(selectedVerbs, selectedTenses, count, excludeVos) {
+// selectedPersons: Set of person indices (0–5) to include in mode A/C questions
+function buildQueue(selectedVerbs, selectedTenses, count, selectedPersons) {
   // Build pool of (verb, mood, tense) combos
   const pool = [];
   selectedVerbs.forEach(verb => {
@@ -510,7 +511,7 @@ function buildQueue(selectedVerbs, selectedTenses, count, excludeVos) {
     // For mode A: pick a random person slot
     let personIndex = null;
     if (mode === 'A' && !isSingleForm) {
-      const slots = [0,1,2,3,4,5].filter(i => !(excludeVos && i === 4) && forms[i] !== '—');
+      const slots = [0,1,2,3,4,5].filter(i => selectedPersons.has(i) && forms[i] !== '—');
       personIndex = slots[Math.floor(Math.random() * slots.length)];
     }
 
@@ -632,7 +633,7 @@ function renderModeB(q) {
 
 function renderModeC(q) {
   const persons = PERSONS.map((p, i) => ({ p, i }))
-    .filter(({ i }) => !(sessionSetup.excludeVos && i === 4));
+    .filter(({ i }) => sessionSetup.selectedPersons.has(i));
   return `
     <div class="question-label">${moodLabel(q.mood)}</div>
     <div class="question-prompt">${q.verb} · ${q.tense}</div>
@@ -840,9 +841,13 @@ function renderSetup() {
     </div>
 
     <div class="card">
-      <div class="toggle-row">
-        <input type="checkbox" id="exclude-vos" checked>
-        <label for="exclude-vos">Skip <em>vós</em> forms (not used in Brazilian Portuguese conversation)</label>
+      <h3>Persons</h3>
+      <div class="chip-group" id="person-chips">
+        ${PERSON_SHORT.map((label, i) => `
+          <label class="chip${i !== 4 ? ' selected' : ''}" id="chip-person-${i}">
+            <input type="checkbox" ${i !== 4 ? 'checked' : ''} data-person="${i}" onchange="updateChip(this)">
+            ${label}
+          </label>`).join('')}
       </div>
       <div class="count-row">
         <label for="q-count">Questions:</label>
@@ -864,7 +869,8 @@ function updateChip(el) {
 function updateStartButton() {
   const anyVerb = [...document.querySelectorAll('[data-verb]')].some(el => el.checked);
   const anyTense = [...document.querySelectorAll('[data-tense]')].some(el => el.checked);
-  document.getElementById('start-btn').disabled = !(anyVerb && anyTense);
+  const anyPerson = [...document.querySelectorAll('[data-person]')].some(el => el.checked);
+  document.getElementById('start-btn').disabled = !(anyVerb && anyTense && anyPerson);
 }
 
 function startSession() {
@@ -874,10 +880,12 @@ function startSession() {
     selectedTenses[el.dataset.mood].push(el.dataset.tense);
   });
   const count = Math.max(5, Math.min(100, parseInt(document.getElementById('q-count').value) || 20));
-  const excludeVos = document.getElementById('exclude-vos').checked;
+  const selectedPersons = new Set(
+    [...document.querySelectorAll('[data-person]:checked')].map(el => parseInt(el.dataset.person))
+  );
 
-  sessionSetup = { selectedVerbs, selectedTenses, count, excludeVos };
-  currentQueue = buildQueue(selectedVerbs, selectedTenses, count, excludeVos);
+  sessionSetup = { selectedVerbs, selectedTenses, count, selectedPersons };
+  currentQueue = buildQueue(selectedVerbs, selectedTenses, count, selectedPersons);
   currentIndex = 0;
   sessionResults = [];
   renderPractice();
