@@ -563,6 +563,175 @@ function getWeakTenses() {
     .map(([key]) => key);
 }
 
+function moodLabel(mood) {
+  return { Indicativo: 'Indicativo', Subjuntivo: 'Subjuntivo',
+    Imperativo: 'Imperativo', FormasNominais: 'Formas Nominais' }[mood] || mood;
+}
+
+function renderPractice() {
+  if (currentIndex >= currentQueue.length) { renderResults(); return; }
+  const q = currentQueue[currentIndex];
+  const app = document.getElementById('app');
+
+  const pct = Math.round((currentIndex / currentQueue.length) * 100);
+  app.innerHTML = `
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" style="width:${pct}%"></div>
+    </div>
+    <div class="card" id="question-card">
+      ${renderQuestion(q)}
+    </div>
+  `;
+
+  if (q.mode === 'A') {
+    const inp = document.getElementById('answer-input');
+    if (inp) { inp.focus(); inp.addEventListener('keydown', e => { if (e.key === 'Enter') submitModeA(); }); }
+  }
+}
+
+function renderQuestion(q) {
+  const counter = `<div style="font-size:0.8rem;color:#9ca3af;margin-bottom:8px;">${currentIndex + 1} / ${currentQueue.length}</div>`;
+  if (q.mode === 'A') return counter + renderModeA(q);
+  if (q.mode === 'B') return counter + renderModeB(q);
+  return counter + renderModeC(q);
+}
+
+function renderModeA(q) {
+  const isSingle = typeof q.forms === 'string';
+  const person = isSingle ? '' : ` · ${PERSONS[q.personIndex]}`;
+  return `
+    <div class="question-label">${moodLabel(q.mood)} · ${q.tense}</div>
+    <div class="question-prompt">${q.verb}${person}</div>
+    <input class="answer-input" id="answer-input" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="type conjugation…">
+    <div class="feedback" id="feedback"></div>
+    <button class="btn btn-primary" style="margin-top:14px;" onclick="submitModeA()">Check</button>
+  `;
+}
+
+function renderModeB(q) {
+  const sample = Array.isArray(q.forms) ? q.forms.slice(0,4).join(' · ') : q.forms;
+  return `
+    <div class="question-label">${q.verb} · What tense is this? (${moodLabel(q.mood)})</div>
+    <div class="question-prompt" style="font-size:1.1rem;">${sample}</div>
+    <div class="choices" id="choices">
+      ${q.choices.map((c, i) => `
+        <button class="choice-btn" id="choice-${i}" onclick="submitModeB(${i})" data-correct="${c.correct}">
+          ${c.tense} <span style="color:#9ca3af;font-size:0.8rem;">(${c.mood})</span>
+        </button>`).join('')}
+    </div>
+    <div class="feedback" id="feedback"></div>
+  `;
+}
+
+function renderModeC(q) {
+  const persons = PERSONS.map((p, i) => ({ p, i }))
+    .filter(({ i }) => !(sessionSetup.excludeVos && i === 4));
+  return `
+    <div class="question-label">${moodLabel(q.mood)}</div>
+    <div class="question-prompt">${q.verb} · ${q.tense}</div>
+    <table class="fill-table">
+      ${persons.map(({ p, i }) => `
+        <tr>
+          <td class="person-cell">${p}</td>
+          <td><input class="fill-input" id="fill-${i}" data-idx="${i}" type="text"
+            autocomplete="off" autocorrect="off" spellcheck="false"
+            onkeydown="if(event.key==='Enter')submitModeC()"></td>
+        </tr>`).join('')}
+    </table>
+    <div class="feedback" id="feedback"></div>
+    <button class="btn btn-primary" onclick="submitModeC()">Check all</button>
+  `;
+}
+
+function nextQuestion(correct, key) {
+  Progress.record(key, correct);
+  sessionResults.push({ ...currentQueue[currentIndex], correct });
+  currentIndex++;
+  setTimeout(renderPractice, correct ? 800 : 1400);
+}
+
+function submitModeA() {
+  const q = currentQueue[currentIndex];
+  const input = document.getElementById('answer-input');
+  const feedback = document.getElementById('feedback');
+  if (!input || input.disabled) return;
+
+  const expected = typeof q.forms === 'string' ? q.forms : q.forms[q.personIndex];
+  const result = checkAnswer(input.value, expected);
+  const key = `${q.verb}|${q.mood}|${q.tense}`;
+
+  input.disabled = true;
+  document.querySelector('[onclick="submitModeA()"]').disabled = true;
+
+  if (result === 'correct') {
+    input.classList.add('correct');
+    feedback.className = 'feedback correct';
+    feedback.textContent = '✓ Correct!';
+    nextQuestion(true, key);
+  } else if (result === 'accent-only') {
+    input.classList.add('accent');
+    feedback.className = 'feedback accent';
+    feedback.innerHTML = `⚠ Check accents — answer: <strong>${expected}</strong>`;
+    nextQuestion(false, key);
+  } else {
+    input.classList.add('wrong');
+    feedback.className = 'feedback wrong';
+    feedback.innerHTML = `✗ Correct answer: <strong>${expected}</strong>`;
+    nextQuestion(false, key);
+  }
+}
+
+function submitModeB(choiceIndex) {
+  const q = currentQueue[currentIndex];
+  const feedback = document.getElementById('feedback');
+  const buttons = document.querySelectorAll('.choice-btn');
+  buttons.forEach(b => b.disabled = true);
+
+  const choice = q.choices[choiceIndex];
+  const correct = choice.correct;
+  const key = `${q.verb}|${q.mood}|${q.tense}`;
+
+  buttons.forEach((b, i) => {
+    if (q.choices[i].correct) b.classList.add('correct-reveal');
+    else if (i === choiceIndex && !correct) b.classList.add('wrong-reveal');
+  });
+
+  feedback.className = correct ? 'feedback correct' : 'feedback wrong';
+  feedback.textContent = correct ? '✓ Correct!' : `✗ That was: ${q.tense} (${q.mood})`;
+  nextQuestion(correct, key);
+}
+
+function submitModeC() {
+  const q = currentQueue[currentIndex];
+  const feedback = document.getElementById('feedback');
+  const inputs = document.querySelectorAll('.fill-input');
+  let allCorrect = true;
+  const key = `${q.verb}|${q.mood}|${q.tense}`;
+
+  inputs.forEach(inp => {
+    inp.disabled = true;
+    const idx = parseInt(inp.dataset.idx);
+    const expected = q.forms[idx];
+    const result = checkAnswer(inp.value, expected);
+    if (result === 'correct') {
+      inp.classList.add('correct');
+    } else if (result === 'accent-only') {
+      inp.classList.add('accent');
+      inp.title = `Correct: ${expected}`;
+      allCorrect = false;
+    } else {
+      inp.classList.add('wrong');
+      inp.title = `Correct: ${expected}`;
+      allCorrect = false;
+    }
+  });
+
+  document.querySelector('[onclick="submitModeC()"]').disabled = true;
+  feedback.className = allCorrect ? 'feedback correct' : 'feedback wrong';
+  feedback.textContent = allCorrect ? '✓ All correct!' : '✗ See highlighted cells (hover for correct form)';
+  nextQuestion(allCorrect, key);
+}
+
 function renderSetup() {
   const weak = getWeakTenses();
   const app = document.getElementById('app');
@@ -648,6 +817,9 @@ function startSession() {
 // Expose event handlers to global scope (inline onclick needs window access from inside IIFE)
 window.updateChip = updateChip;
 window.startSession = startSession;
+window.submitModeA = submitModeA;
+window.submitModeB = submitModeB;
+window.submitModeC = submitModeC;
 
 renderSetup();
 
