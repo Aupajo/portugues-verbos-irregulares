@@ -78,7 +78,11 @@
   /* Question card */
   .question-label { font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.06em; color: #7c3aed; margin-bottom: 6px; }
-  .question-prompt { font-size: 1.35rem; font-weight: 700; margin-bottom: 20px; }
+  .question-prompt { font-size: 1.55rem; font-weight: 800; margin-bottom: 4px; }
+  .tense-name { font-size: 1rem; font-weight: 700; color: #374151; margin-bottom: 2px; }
+  .mood-tag { font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #7c3aed; margin-left: 6px; }
+  .tense-desc { font-size: 0.8rem; color: #9ca3af; margin-bottom: 18px; }
 
   /* Text input for mode A */
   .answer-input {
@@ -579,6 +583,42 @@ function moodLabel(mood) {
     Imperativo: 'Imperativo', FormasNominais: 'Formas Nominais' }[mood] || mood;
 }
 
+const TENSE_DESC = {
+  // Indicativo
+  'Indicativo|Presente':                              'present — habitual or ongoing actions',
+  'Indicativo|Pretérito Imperfeito':                  'imperfect past — repeated or ongoing past actions',
+  'Indicativo|Pretérito Perfeito simples':            'simple past — completed actions',
+  'Indicativo|Pretérito Perfeito composto':           'compound past — actions continuing to the present',
+  'Indicativo|Pretérito mais-que-perfeito simples':   'past perfect — actions before another past action',
+  'Indicativo|Pretérito mais-que-perfeito composto':  'compound past perfect',
+  'Indicativo|Futuro do Presente simples':            'future — actions that will happen',
+  'Indicativo|Futuro do Presente composto':           'future perfect — actions that will have happened',
+  'Indicativo|Futuro do Pretérito simples':           'conditional — actions that would happen',
+  'Indicativo|Futuro do Pretérito composto':          'conditional perfect — actions that would have happened',
+  // Subjuntivo
+  'Subjuntivo|Presente':                             'present subjunctive — wishes, doubts, emotions',
+  'Subjuntivo|Pretérito Perfeito':                   'perfect subjunctive — completed hypothetical actions',
+  'Subjuntivo|Pretérito Imperfeito':                 'imperfect subjunctive — hypothetical or past wishes',
+  'Subjuntivo|Pretérito mais-que-perfeito':          'past perfect subjunctive',
+  'Subjuntivo|Futuro simples':                       'future subjunctive — if/when clauses',
+  'Subjuntivo|Futuro composto':                      'future perfect subjunctive',
+  // Imperativo
+  'Imperativo|Afirmativo':                           'affirmative commands — telling someone to do something',
+  'Imperativo|Negativo':                             'negative commands — telling someone not to do something',
+  // Formas Nominais
+  'FormasNominais|Infinito pessoal':                 'personal infinitive — infinitive with a subject',
+  'FormasNominais|Gerúndio':                         'gerund — ongoing action (-ing form)',
+  'FormasNominais|Particípio':                       'past participle — used in perfect tenses',
+};
+
+function tenseHeader(mood, tense) {
+  const desc = TENSE_DESC[`${mood}|${tense}`];
+  return `
+    <div class="tense-name">${tense} <span class="mood-tag">${moodLabel(mood)}</span></div>
+    ${desc ? `<div class="tense-desc">${desc}</div>` : ''}
+  `;
+}
+
 function renderPractice() {
   if (currentIndex >= currentQueue.length) { renderResults(); return; }
   const q = currentQueue[currentIndex];
@@ -611,8 +651,8 @@ function renderModeA(q) {
   const isSingle = typeof q.forms === 'string';
   const person = isSingle ? '' : ` · ${PERSONS[q.personIndex]}`;
   return `
-    <div class="question-label">${moodLabel(q.mood)} · ${q.tense}</div>
     <div class="question-prompt">${q.verb}${person}</div>
+    ${tenseHeader(q.mood, q.tense)}
     <input class="answer-input" id="answer-input" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="type conjugation…">
     <div class="feedback" id="feedback"></div>
     <button class="btn btn-primary" style="margin-top:14px;" onclick="submitModeA()">Check</button>
@@ -622,8 +662,9 @@ function renderModeA(q) {
 function renderModeB(q) {
   const sample = Array.isArray(q.forms) ? q.forms.slice(0,4).join(' · ') : q.forms;
   return `
-    <div class="question-label">${q.verb} · What tense is this? (${moodLabel(q.mood)})</div>
-    <div class="question-prompt" style="font-size:1.1rem;">${sample}</div>
+    <div class="question-prompt">${q.verb}</div>
+    <div class="question-label">What tense is this? (${moodLabel(q.mood)})</div>
+    <div style="font-size:1.1rem;font-weight:600;margin-bottom:20px;">${sample}</div>
     <div class="choices" id="choices">
       ${q.choices.map((c, i) => `
         <button class="choice-btn" id="choice-${i}" onclick="submitModeB(${i})" data-correct="${c.correct}">
@@ -638,8 +679,8 @@ function renderModeC(q) {
   const persons = PERSONS.map((p, i) => ({ p, i }))
     .filter(({ i }) => sessionSetup.selectedPersons.has(i));
   return `
-    <div class="question-label">${moodLabel(q.mood)}</div>
-    <div class="question-prompt">${q.verb} · ${q.tense}</div>
+    <div class="question-prompt">${q.verb}</div>
+    ${tenseHeader(q.mood, q.tense)}
     <table class="fill-table">
       ${persons.map(({ p, i }) => `
         <tr>
