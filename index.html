@@ -533,8 +533,123 @@ function buildQueue(selectedVerbs, selectedTenses, count, excludeVos) {
   return questions;
 }
 
-// App placeholder — screens added in later tasks
-document.getElementById('app').textContent = 'Loading…';
+// ── Session state ──
+let currentQueue = [];
+let currentIndex = 0;
+let sessionResults = [];
+let sessionSetup = null;
+
+const TENSE_GROUPS = {
+  Indicativo: [
+    "Presente","Pretérito Imperfeito","Pretérito Perfeito simples",
+    "Pretérito Perfeito composto","Pretérito mais-que-perfeito simples",
+    "Pretérito mais-que-perfeito composto","Futuro do Presente simples",
+    "Futuro do Presente composto","Futuro do Pretérito simples","Futuro do Pretérito composto",
+  ],
+  Subjuntivo: [
+    "Presente","Pretérito Perfeito","Pretérito Imperfeito",
+    "Pretérito mais-que-perfeito","Futuro simples","Futuro composto",
+  ],
+  Imperativo: ["Afirmativo","Negativo"],
+  FormasNominais: ["Infinito pessoal","Gerúndio","Particípio"],
+};
+
+function getWeakTenses() {
+  const all = Progress.getAll();
+  return Object.entries(all)
+    .filter(([, v]) => v.incorrect > 0)
+    .sort((a, b) => b[1].incorrect - a[1].incorrect)
+    .slice(0, 5)
+    .map(([key]) => key);
+}
+
+function renderSetup() {
+  const weak = getWeakTenses();
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <h1>Verbos Irregulares</h1>
+    <p class="subtitle">Configure your practice session</p>
+
+    <div class="card">
+      <h3>Verbs</h3>
+      <div class="chip-group" id="verb-chips">
+        ${Object.keys(VERBS).map(v => `
+          <label class="chip selected" id="chip-${v}">
+            <input type="checkbox" checked data-verb="${v}" onchange="updateChip(this)">
+            ${v}
+          </label>`).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Tenses</h3>
+      ${Object.entries(TENSE_GROUPS).map(([mood, tenses]) => `
+        <div class="tense-group">
+          <div class="tense-group-label">${mood}</div>
+          <div class="chip-group">
+            ${tenses.map(t => {
+              const isWeak = weak.some(w => w.includes('|' + t));
+              const defaultOn = mood === 'Indicativo' && [
+                'Presente','Pretérito Perfeito simples','Pretérito Imperfeito'
+              ].includes(t);
+              return `<label class="chip${defaultOn ? ' selected' : ''}" id="chip-${mood}-${t.replace(/ /g,'_')}">
+                <input type="checkbox" ${defaultOn ? 'checked' : ''} data-mood="${mood}" data-tense="${t}" onchange="updateChip(this)">
+                ${t}${isWeak ? ' ⚠️' : ''}
+              </label>`;
+            }).join('')}
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <div class="card">
+      <div class="toggle-row">
+        <input type="checkbox" id="exclude-vos" checked>
+        <label for="exclude-vos">Skip <em>vós</em> forms (not used in Brazilian Portuguese conversation)</label>
+      </div>
+      <div class="count-row">
+        <label for="q-count">Questions:</label>
+        <input type="number" id="q-count" value="20" min="5" max="100">
+      </div>
+      <button class="btn btn-primary btn-full" id="start-btn" onclick="startSession()">Start session</button>
+    </div>
+  `;
+  updateStartButton();
+}
+
+function updateChip(el) {
+  const label = el.closest('.chip');
+  if (el.checked) label.classList.add('selected');
+  else label.classList.remove('selected');
+  updateStartButton();
+}
+
+function updateStartButton() {
+  const anyVerb = [...document.querySelectorAll('[data-verb]')].some(el => el.checked);
+  const anyTense = [...document.querySelectorAll('[data-tense]')].some(el => el.checked);
+  document.getElementById('start-btn').disabled = !(anyVerb && anyTense);
+}
+
+function startSession() {
+  const selectedVerbs = [...document.querySelectorAll('[data-verb]:checked')].map(el => el.dataset.verb);
+  const selectedTenses = { Indicativo: [], Subjuntivo: [], Imperativo: [], FormasNominais: [] };
+  document.querySelectorAll('[data-tense]:checked').forEach(el => {
+    selectedTenses[el.dataset.mood].push(el.dataset.tense);
+  });
+  const count = Math.max(5, Math.min(100, parseInt(document.getElementById('q-count').value) || 20));
+  const excludeVos = document.getElementById('exclude-vos').checked;
+
+  sessionSetup = { selectedVerbs, selectedTenses, count, excludeVos };
+  currentQueue = buildQueue(selectedVerbs, selectedTenses, count, excludeVos);
+  currentIndex = 0;
+  sessionResults = [];
+  renderPractice();
+}
+
+// Expose event handlers to global scope (inline onclick needs window access from inside IIFE)
+window.updateChip = updateChip;
+window.startSession = startSession;
+
+renderSetup();
 
 })();
   </script>
