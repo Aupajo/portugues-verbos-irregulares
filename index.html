@@ -646,8 +646,20 @@ function renderModeC(q) {
 function nextQuestion(correct, key) {
   Progress.record(key, correct);
   sessionResults.push({ ...currentQueue[currentIndex], correct });
+  const feedbackEl = document.getElementById('feedback');
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn btn-primary';
+  nextBtn.style.marginTop = '14px';
+  nextBtn.style.display = 'block';
+  nextBtn.textContent = 'Next \u2192';
+  nextBtn.onclick = goToNext;
+  feedbackEl.after(nextBtn);
+  nextBtn.focus();
+}
+
+function goToNext() {
   currentIndex++;
-  setTimeout(renderPractice, correct ? 800 : 1400);
+  renderPractice();
 }
 
 function submitModeA() {
@@ -872,6 +884,7 @@ window.submitModeB = submitModeB;
 window.submitModeC = submitModeC;
 window.practiceAgain = practiceAgain;
 window.renderSetup = renderSetup;
+window.goToNext = goToNext;
 
 renderSetup();
 
