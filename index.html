@@ -483,8 +483,9 @@ function buildQueue(selectedVerbs, selectedTenses, count, excludeVos) {
   const totalWeight = pool.reduce((s, p) => s + p.weight, 0);
   const questions = [];
 
-  // Need at least 4 pool items for mode B distractors
-  const canUseB = pool.length >= 4;
+  // Need at least 4 unique tenses for mode B to have meaningful choices
+  const uniqueTenses = new Set(pool.filter(p => typeof p.forms !== 'string').map(p => `${p.mood}|${p.tense}`));
+  const canUseB = uniqueTenses.size >= 4;
 
   for (let i = 0; i < count; i++) {
     // Pick item by weight
@@ -516,9 +517,15 @@ function buildQueue(selectedVerbs, selectedTenses, count, excludeVos) {
     // For mode B: build 4 choices (correct tense + 3 distractors from other tenses)
     let choices = null;
     if (mode === 'B') {
+      const seen = new Set([`${mood}|${tense}`]);
       const distractors = pool
-        .filter(p => !(p.verb === verb && p.mood === mood && p.tense === tense) && typeof p.forms !== 'string')
+        .filter(p => typeof p.forms !== 'string')
         .sort(() => Math.random() - 0.5)
+        .reduce((acc, p) => {
+          const key = `${p.mood}|${p.tense}`;
+          if (!seen.has(key)) { seen.add(key); acc.push(p); }
+          return acc;
+        }, [])
         .slice(0, 3)
         .map(p => ({ verb: p.verb, mood: p.mood, tense: p.tense }));
       choices = [
