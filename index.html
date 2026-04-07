@@ -638,6 +638,15 @@ function renderPractice() {
     const inp = document.getElementById('answer-input');
     if (inp) { inp.focus(); inp.addEventListener('keydown', e => { if (e.key === 'Enter') submitModeA(); }); }
   }
+  if (q.mode === 'C') {
+    const inputs = [...document.querySelectorAll('.fill-input')];
+    if (inputs.length) inputs[0].focus();
+    inputs.forEach(inp => inp.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const allFilled = inputs.every(i => i.value.trim() !== '');
+      if (allFilled) submitModeC();
+    }));
+  }
 }
 
 function renderQuestion(q) {
@@ -686,8 +695,7 @@ function renderModeC(q) {
         <tr>
           <td class="person-cell">${p}</td>
           <td><input class="fill-input" id="fill-${i}" data-idx="${i}" type="text"
-            autocomplete="off" autocorrect="off" spellcheck="false"
-            onkeydown="if(event.key==='Enter')submitModeC()"></td>
+            autocomplete="off" autocorrect="off" spellcheck="false"></td>
         </tr>`).join('')}
     </table>
     <div class="feedback" id="feedback"></div>
