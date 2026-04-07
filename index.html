@@ -120,6 +120,9 @@
   .fill-table input.correct { border-color: #16a34a; background: #f0fdf4; }
   .fill-table input.wrong   { border-color: #dc2626; background: #fef2f2; }
   .fill-table input.accent  { border-color: #d97706; background: #fffbeb; }
+  .correction { margin-left: 8px; font-size: 0.875rem; font-weight: 600; }
+  .wrong-correction  { color: #dc2626; }
+  .accent-correction { color: #d97706; }
 
   /* Results */
   .score-big { font-size: 3rem; font-weight: 800; color: #7c3aed; text-align: center; }
@@ -737,18 +740,18 @@ function submitModeC() {
       inp.classList.add('correct');
     } else if (result === 'accent-only') {
       inp.classList.add('accent');
-      inp.title = `Correct: ${expected}`;
+      inp.insertAdjacentHTML('afterend', `<span class="correction accent-correction">${expected}</span>`);
       allCorrect = false;
     } else {
       inp.classList.add('wrong');
-      inp.title = `Correct: ${expected}`;
+      inp.insertAdjacentHTML('afterend', `<span class="correction wrong-correction">${expected}</span>`);
       allCorrect = false;
     }
   });
 
   document.querySelector('[onclick="submitModeC()"]').disabled = true;
   feedback.className = allCorrect ? 'feedback correct' : 'feedback wrong';
-  feedback.textContent = allCorrect ? '✓ All correct!' : '✗ See highlighted cells (hover for correct form)';
+  feedback.textContent = allCorrect ? '✓ All correct!' : '✗ Corrections shown';
   nextQuestion(allCorrect, key);
 }
 
