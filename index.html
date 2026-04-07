@@ -888,8 +888,8 @@ function renderSetup() {
       <h3>Persons</h3>
       <div class="chip-group" id="person-chips">
         ${PERSON_SHORT.map((label, i) => `
-          <label class="chip${i !== 4 ? ' selected' : ''}" id="chip-person-${i}">
-            <input type="checkbox" ${i !== 4 ? 'checked' : ''} data-person="${i}" onchange="updateChip(this)">
+          <label class="chip${i !== 1 && i !== 4 ? ' selected' : ''}" id="chip-person-${i}">
+            <input type="checkbox" ${i !== 1 && i !== 4 ? 'checked' : ''} data-person="${i}" onchange="updateChip(this)">
             ${label}
           </label>`).join('')}
       </div>
