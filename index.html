@@ -699,18 +699,37 @@ function nextQuestion(correct, key) {
   Progress.record(key, correct);
   sessionResults.push({ ...currentQueue[currentIndex], correct });
   const feedbackEl = document.getElementById('feedback');
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;margin-top:14px;';
+
+  if (currentIndex > 0) {
+    const backBtn = document.createElement('button');
+    backBtn.className = 'btn btn-secondary';
+    backBtn.textContent = '\u2190 Back';
+    backBtn.onclick = goBack;
+    row.appendChild(backBtn);
+  }
+
   const nextBtn = document.createElement('button');
   nextBtn.className = 'btn btn-primary';
-  nextBtn.style.marginTop = '14px';
-  nextBtn.style.display = 'block';
   nextBtn.textContent = 'Next \u2192';
   nextBtn.onclick = goToNext;
-  feedbackEl.after(nextBtn);
+  row.appendChild(nextBtn);
+
+  feedbackEl.after(row);
   setTimeout(() => nextBtn.focus(), 50);
 }
 
 function goToNext() {
   currentIndex++;
+  renderPractice();
+}
+
+function goBack() {
+  sessionResults.pop(); // undo current answer
+  currentIndex--;
+  sessionResults.pop(); // undo previous answer so it can be re-tried
   renderPractice();
 }
 
@@ -944,6 +963,7 @@ window.submitModeC = submitModeC;
 window.practiceAgain = practiceAgain;
 window.renderSetup = renderSetup;
 window.goToNext = goToNext;
+window.goBack = goBack;
 
 renderSetup();
 
