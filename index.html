@@ -706,7 +706,7 @@ function nextQuestion(correct, key) {
   nextBtn.textContent = 'Next \u2192';
   nextBtn.onclick = goToNext;
   feedbackEl.after(nextBtn);
-  nextBtn.focus();
+  setTimeout(() => nextBtn.focus(), 50);
 }
 
 function goToNext() {
