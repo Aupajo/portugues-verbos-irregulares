@@ -732,6 +732,56 @@ function submitModeC() {
   nextQuestion(allCorrect, key);
 }
 
+function renderResults() {
+  const total = sessionResults.length;
+  const correct = sessionResults.filter(r => r.correct).length;
+  const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+  const weakMap = {};
+  sessionResults.filter(r => !r.correct).forEach(r => {
+    const key = `${r.verb} · ${r.tense} (${moodLabel(r.mood)})`;
+    weakMap[key] = (weakMap[key] || 0) + 1;
+  });
+  const weakItems = Object.entries(weakMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="card" style="text-align:center;padding:32px 20px;">
+      <div class="score-big">${correct} / ${total}</div>
+      <div class="score-pct">${pct}% correct</div>
+    </div>
+
+    ${weakItems.length > 0 ? `
+      <div class="card">
+        <h3>Needs work</h3>
+        <ul class="weak-list">
+          ${weakItems.map(([label, count]) => `<li>${label} <span style="color:#9ca3af">(${count}×)</span></li>`).join('')}
+        </ul>
+        <p style="font-size:0.8rem;color:#9ca3af;margin-top:10px;">
+          Progress saved — weak tenses will appear more often next session.
+        </p>
+      </div>` : `
+      <div class="card" style="text-align:center;color:#16a34a;font-weight:600;">
+        Perfect session! 🎉
+      </div>`}
+
+    <div class="action-row">
+      <button class="btn btn-secondary" onclick="practiceAgain()">Practice again</button>
+      <button class="btn btn-primary" onclick="renderSetup()">New session</button>
+    </div>
+  `;
+}
+
+function practiceAgain() {
+  const { selectedVerbs, selectedTenses, count, excludeVos } = sessionSetup;
+  currentQueue = buildQueue(selectedVerbs, selectedTenses, count, excludeVos);
+  currentIndex = 0;
+  sessionResults = [];
+  renderPractice();
+}
+
 function renderSetup() {
   const weak = getWeakTenses();
   const app = document.getElementById('app');
@@ -820,6 +870,8 @@ window.startSession = startSession;
 window.submitModeA = submitModeA;
 window.submitModeB = submitModeB;
 window.submitModeC = submitModeC;
+window.practiceAgain = practiceAgain;
+window.renderSetup = renderSetup;
 
 renderSetup();
 
