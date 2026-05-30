@@ -567,11 +567,16 @@ function buildQueue(selectedVerbs, selectedTenses, count, selectedPersons) {
   const uniqueTenses = new Set(pool.filter(p => typeof p.forms !== 'string').map(p => `${p.mood}|${p.tense}`));
   const canUseB = uniqueTenses.size >= 4;
 
+  let lastKey = null;
   for (let i = 0; i < count; i++) {
-    // Pick item by weight
-    let r = Math.random() * totalWeight;
-    let item = pool[pool.length - 1];
-    for (const p of pool) { r -= p.weight; if (r <= 0) { item = p; break; } }
+    // Pick item by weight, avoiding back-to-back duplicates when possible
+    let item;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      let r = Math.random() * totalWeight;
+      item = pool[pool.length - 1];
+      for (const p of pool) { r -= p.weight; if (r <= 0) { item = p; break; } }
+      if (pool.length <= 1 || `${item.verb}|${item.mood}|${item.tense}` !== lastKey) break;
+    }
 
     const { verb, mood, tense, forms } = item;
     const isSingleForm = typeof forms === 'string';
@@ -616,6 +621,7 @@ function buildQueue(selectedVerbs, selectedTenses, count, selectedPersons) {
 
     const example = getExampleVerb(verb, mood, tense);
     questions.push({ verb, mood, tense, forms, mode, personIndex, choices, example });
+    lastKey = `${verb}|${mood}|${tense}`;
   }
 
   return questions;
