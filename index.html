@@ -627,7 +627,7 @@ const DEFAULT_SETTINGS = {
   verbs: Object.keys(VERBS),
   tenses: { Indicativo: ['Presente','Pretérito Perfeito simples','Pretérito Imperfeito'], Subjuntivo: [], Imperativo: [], FormasNominais: [] },
   persons: [0, 2, 3, 5],
-  count: 10,
+  count: 5,
   showHints: true,
 };
 
@@ -831,9 +831,9 @@ function renderModeC(q) {
   `;
 }
 
-function nextQuestion(correct, key) {
-  Progress.record(key, correct);
-  sessionResults.push({ ...currentQueue[currentIndex], correct });
+function nextQuestion(scored, outOf, key, answers) {
+  Progress.record(key, scored === outOf);
+  sessionResults.push({ ...currentQueue[currentIndex], scored, outOf, answers });
   const feedbackEl = document.getElementById('feedback');
 
   const row = document.createElement('div');
@@ -882,21 +882,22 @@ function submitModeA() {
   input.disabled = true;
   document.querySelector('[onclick="submitModeA()"]').disabled = true;
 
+  const given = input.value.trim();
   if (result === 'correct') {
     input.classList.add('correct');
     feedback.className = 'feedback correct';
     feedback.textContent = '✓ Correct!';
-    nextQuestion(true, key);
+    nextQuestion(1, 1, key, { given, expected });
   } else if (result === 'accent-only') {
     input.classList.add('accent');
     feedback.className = 'feedback accent';
     feedback.innerHTML = `⚠ Check accents — answer: <strong>${expected}</strong>`;
-    nextQuestion(false, key);
+    nextQuestion(0, 1, key, { given, expected });
   } else {
     input.classList.add('wrong');
     feedback.className = 'feedback wrong';
     feedback.innerHTML = `✗ Correct answer: <strong>${expected}</strong>`;
-    nextQuestion(false, key);
+    nextQuestion(0, 1, key, { given, expected });
   }
 }
 
@@ -917,15 +918,17 @@ function submitModeB(choiceIndex) {
 
   feedback.className = correct ? 'feedback correct' : 'feedback wrong';
   feedback.textContent = correct ? '✓ Correct!' : `✗ That was: ${q.tense} (${q.mood})`;
-  nextQuestion(correct, key);
+  nextQuestion(correct ? 1 : 0, 1, key, { given: choice.tense, expected: q.tense });
 }
 
 function submitModeC() {
   const q = currentQueue[currentIndex];
   const feedback = document.getElementById('feedback');
   const inputs = document.querySelectorAll('.fill-input');
-  let allCorrect = true;
   const key = `${q.verb}|${q.mood}|${q.tense}`;
+  const mistakes = [];
+  let correctCount = 0;
+  const totalCount = inputs.length;
 
   inputs.forEach(inp => {
     inp.disabled = true;
@@ -934,36 +937,44 @@ function submitModeC() {
     const result = checkAnswer(inp.value, expected);
     if (result === 'correct') {
       inp.classList.add('correct');
+      correctCount++;
     } else if (result === 'accent-only') {
       inp.classList.add('accent');
       inp.insertAdjacentHTML('afterend', `<span class="correction accent-correction">${expected}</span>`);
-      allCorrect = false;
+      mistakes.push({ person: PERSON_SHORT[idx], given: inp.value.trim(), expected });
     } else {
       inp.classList.add('wrong');
       inp.insertAdjacentHTML('afterend', `<span class="correction wrong-correction">${expected}</span>`);
-      allCorrect = false;
+      mistakes.push({ person: PERSON_SHORT[idx], given: inp.value.trim(), expected });
     }
   });
 
   document.querySelector('[onclick="submitModeC()"]').disabled = true;
-  feedback.className = allCorrect ? 'feedback correct' : 'feedback wrong';
-  feedback.textContent = allCorrect ? '✓ All correct!' : '✗ Corrections shown';
-  nextQuestion(allCorrect, key);
+  feedback.className = correctCount === totalCount ? 'feedback correct' : 'feedback wrong';
+  feedback.textContent = correctCount === totalCount ? '✓ All correct!' : `✗ ${correctCount}/${totalCount} correct`;
+  nextQuestion(correctCount, totalCount, key, { mistakes });
+}
+
+function renderMistakeDetail(r) {
+  const label = `<strong>${r.verb}</strong> · ${r.tense} <span style="color:#9ca3af;font-size:0.8rem;">(${moodLabel(r.mood)})</span>`;
+  if (r.mode === 'C') {
+    const rows = r.answers.mistakes.map(m =>
+      `<div style="margin-left:12px;font-size:0.85rem;">${m.person}: <span style="color:#dc2626;text-decoration:line-through;">${m.given || '—'}</span> → <span style="color:#16a34a;font-weight:600;">${m.expected}</span></div>`
+    ).join('');
+    return `<li>${label}${rows}</li>`;
+  }
+  // Mode A or B
+  const { given, expected } = r.answers;
+  const person = r.mode === 'A' && r.personIndex != null ? ` (${PERSON_SHORT[r.personIndex]})` : '';
+  return `<li>${label}${person}<div style="margin-left:12px;font-size:0.85rem;"><span style="color:#dc2626;text-decoration:line-through;">${given || '—'}</span> → <span style="color:#16a34a;font-weight:600;">${expected}</span></div></li>`;
 }
 
 function renderResults() {
-  const total = sessionResults.length;
-  const correct = sessionResults.filter(r => r.correct).length;
+  const total = sessionResults.reduce((s, r) => s + r.outOf, 0);
+  const correct = sessionResults.reduce((s, r) => s + r.scored, 0);
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
 
-  const weakMap = {};
-  sessionResults.filter(r => !r.correct).forEach(r => {
-    const key = `${r.verb} · ${r.tense} (${moodLabel(r.mood)})`;
-    weakMap[key] = (weakMap[key] || 0) + 1;
-  });
-  const weakItems = Object.entries(weakMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6);
+  const wrong = sessionResults.filter(r => r.scored < r.outOf);
 
   const app = document.getElementById('app');
   app.innerHTML = `
@@ -972,11 +983,11 @@ function renderResults() {
       <div class="score-pct">${pct}% correct</div>
     </div>
 
-    ${weakItems.length > 0 ? `
+    ${wrong.length > 0 ? `
       <div class="card">
-        <h3>Needs work</h3>
+        <h3>Mistakes</h3>
         <ul class="weak-list">
-          ${weakItems.map(([label, count]) => `<li>${label} <span style="color:#9ca3af">(${count}×)</span></li>`).join('')}
+          ${wrong.map(r => renderMistakeDetail(r)).join('')}
         </ul>
         <p style="font-size:0.8rem;color:#9ca3af;margin-top:10px;">
           Progress saved — weak tenses will appear more often next session.
@@ -994,8 +1005,8 @@ function renderResults() {
 }
 
 function practiceAgain() {
-  const { selectedVerbs, selectedTenses, count, excludeVos } = sessionSetup;
-  currentQueue = buildQueue(selectedVerbs, selectedTenses, count, excludeVos);
+  const { selectedVerbs, selectedTenses, count, selectedPersons } = sessionSetup;
+  currentQueue = buildQueue(selectedVerbs, selectedTenses, count, selectedPersons);
   currentIndex = 0;
   sessionResults = [];
   renderPractice();
@@ -1053,7 +1064,7 @@ function renderSetup() {
       </div>
       <div class="count-row">
         <label for="q-count">Questions:</label>
-        <input type="number" id="q-count" value="${s.count}" min="5" max="100">
+        <input type="number" id="q-count" value="${s.count}" min="1" max="100">
       </div>
       <div class="toggle-row">
         <input type="checkbox" id="show-hints" ${s.showHints ? 'checked' : ''}>
@@ -1086,7 +1097,7 @@ function startSession() {
   document.querySelectorAll('[data-tense]:checked').forEach(el => {
     selectedTenses[el.dataset.mood].push(el.dataset.tense);
   });
-  const count = Math.max(5, Math.min(100, parseInt(document.getElementById('q-count').value) || 10));
+  const count = Math.max(1, Math.min(100, parseInt(document.getElementById('q-count').value) || 10));
   const selectedPersons = new Set(
     [...document.querySelectorAll('[data-person]:checked')].map(el => parseInt(el.dataset.person))
   );
