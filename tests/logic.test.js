@@ -233,6 +233,70 @@ const VERBS = {
     },
   },
 
+  VIR: {
+    Indicativo: {
+      "Presente":                         ["venho","vens","vem","vimos","vindes","vêm"],
+      "Pretérito Imperfeito":             ["vinha","vinhas","vinha","vínhamos","vínheis","vinham"],
+      "Pretérito Perfeito simples":       ["vim","vieste","veio","viemos","viestes","vieram"],
+      "Pretérito Perfeito composto":      ["tenho vindo","tens vindo","tem vindo","temos vindo","tendes vindo","têm vindo"],
+      "Pretérito mais-que-perfeito simples":  ["viera","vieras","viera","viéramos","viéreis","vieram"],
+      "Pretérito mais-que-perfeito composto": ["tinha vindo","tinhas vindo","tinha vindo","tínhamos vindo","tínheis vindo","tinham vindo"],
+      "Futuro do Presente simples":       ["virei","virás","virá","viremos","vireis","virão"],
+      "Futuro do Presente composto":      ["terei vindo","terás vindo","terá vindo","teremos vindo","tereis vindo","terão vindo"],
+      "Futuro do Pretérito simples":      ["viria","virias","viria","viríamos","viríeis","viriam"],
+      "Futuro do Pretérito composto":     ["teria vindo","terias vindo","teria vindo","teríamos vindo","teríeis vindo","teriam vindo"],
+    },
+    Subjuntivo: {
+      "Presente":                         ["venha","venhas","venha","venhamos","venhais","venham"],
+      "Pretérito Perfeito":               ["tenha vindo","tenhas vindo","tenha vindo","tenhamos vindo","tenhais vindo","tenham vindo"],
+      "Pretérito Imperfeito":             ["viesse","viesses","viesse","viéssemos","viésseis","viessem"],
+      "Pretérito mais-que-perfeito":      ["tivesse vindo","tivesses vindo","tivesse vindo","tivéssemos vindo","tivésseis vindo","tivessem vindo"],
+      "Futuro simples":                   ["vier","vieres","vier","viermos","vierdes","vierem"],
+      "Futuro composto":                  ["tiver vindo","tiveres vindo","tiver vindo","tivermos vindo","tiverdes vindo","tiverem vindo"],
+    },
+    Imperativo: {
+      "Afirmativo": ["—","vem (tu)","venha (você)","venhamos (nós)","vinde (vós)","venham (vocês)"],
+      "Negativo":   ["—","não venhas (tu)","não venha (você)","não venhamos (nós)","não venhais (vós)","não venham (vocês)"],
+    },
+    FormasNominais: {
+      "Infinito pessoal": ["vir","vires","vir","virmos","virdes","virem"],
+      "Gerúndio":  "vindo",
+      "Particípio": "vindo",
+    },
+  },
+
+  VER: {
+    Indicativo: {
+      "Presente":                         ["vejo","vês","vê","vemos","vedes","veem"],
+      "Pretérito Imperfeito":             ["via","vias","via","víamos","víeis","viam"],
+      "Pretérito Perfeito simples":       ["vi","viste","viu","vimos","vistes","viram"],
+      "Pretérito Perfeito composto":      ["tenho visto","tens visto","tem visto","temos visto","tendes visto","têm visto"],
+      "Pretérito mais-que-perfeito simples":  ["vira","viras","vira","víramos","víreis","viram"],
+      "Pretérito mais-que-perfeito composto": ["tinha visto","tinhas visto","tinha visto","tínhamos visto","tínheis visto","tinham visto"],
+      "Futuro do Presente simples":       ["verei","verás","verá","veremos","vereis","verão"],
+      "Futuro do Presente composto":      ["terei visto","terás visto","terá visto","teremos visto","tereis visto","terão visto"],
+      "Futuro do Pretérito simples":      ["veria","verias","veria","veríamos","veríeis","veriam"],
+      "Futuro do Pretérito composto":     ["teria visto","terias visto","teria visto","teríamos visto","teríeis visto","teriam visto"],
+    },
+    Subjuntivo: {
+      "Presente":                         ["veja","vejas","veja","vejamos","vejais","vejam"],
+      "Pretérito Perfeito":               ["tenha visto","tenhas visto","tenha visto","tenhamos visto","tenhais visto","tenham visto"],
+      "Pretérito Imperfeito":             ["visse","visses","visse","víssemos","vísseis","vissem"],
+      "Pretérito mais-que-perfeito":      ["tivesse visto","tivesses visto","tivesse visto","tivéssemos visto","tivésseis visto","tivessem visto"],
+      "Futuro simples":                   ["vir","vires","vir","virmos","virdes","virem"],
+      "Futuro composto":                  ["tiver visto","tiveres visto","tiver visto","tivermos visto","tiverdes visto","tiverem visto"],
+    },
+    Imperativo: {
+      "Afirmativo": ["—","vê (tu)","veja (você)","vejamos (nós)","vede (vós)","vejam (vocês)"],
+      "Negativo":   ["—","não vejas (tu)","não veja (você)","não vejamos (nós)","não vejais (vós)","não vejam (vocês)"],
+    },
+    FormasNominais: {
+      "Infinito pessoal": ["ver","veres","ver","vermos","verdes","verem"],
+      "Gerúndio":  "vendo",
+      "Particípio": "visto",
+    },
+  },
+
   DAR: {
     Indicativo: {
       "Presente":                         ["dou","dás","dá","damos","dais","dão"],
@@ -267,7 +331,7 @@ const VERBS = {
 };
 // ── END: copy of VERBS from index.html ──
 
-const VERB_NAMES = ["SER","IR","ESTAR","TER","FAZER","SABER","QUERER","DAR"];
+const VERB_NAMES = ["SER","IR","ESTAR","TER","FAZER","SABER","QUERER","VIR","VER","DAR"];
 const INDICATIVO_TENSES = [
   "Presente","Pretérito Imperfeito","Pretérito Perfeito simples",
   "Pretérito Perfeito composto","Pretérito mais-que-perfeito simples",
